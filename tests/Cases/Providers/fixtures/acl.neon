@@ -1,0 +1,23 @@
+roles:
+	guest:
+	user:
+		parents: guest
+		label: enum.role.user
+		color: success
+		power: 1
+	admin: [user]
+
+resources:
+	Menu:Content:
+		Article:
+			privileges: [view.default, view.edit, edit.active]
+			Article:Comment:
+		Page: [view]
+	System:
+		System:Log:
+
+rules:
+	- {role: guest, resource: Article, privilege: view}
+	- {role: user, resource: Article, privileges: [edit.active]}
+	- {role: admin}
+	- {role: admin, resource: System, allowed: false}

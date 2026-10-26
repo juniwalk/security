@@ -1,0 +1,57 @@
+{
+	"name": "juniwalk/security",
+	"description": "Extended security tools for Nette, starting with flexible ACL.",
+	"type": "library",
+	"keywords": ["nette","nettefw","security","acl","permission"],
+	"license": "MIT",
+
+	"authors": [{
+		"name": "Martin Procházka",
+		"email": "juniwalk@outlook.cz",
+		"role": "Developer"
+	}],
+
+	"minimum-stability": "dev",
+	"prefer-stable": true,
+	"config": {
+		"sort-packages": true,
+		"allow-plugins": {
+			"phpstan/extension-installer": true
+		}
+	},
+
+	"autoload": {
+		"psr-4": {"JuniWalk\\Security\\": "src/"}
+	},
+
+	"require": {
+		"php": ">=8.4",
+		"nette/application": "^3.2",
+		"nette/caching": "^3.0",
+		"nette/di": "^3.0",
+		"nette/neon": "^3.0",
+		"nette/schema": "^1.0",
+		"nette/security": "^3.2",
+		"nette/utils": "^4.0",
+		"ramsey/uuid": "^4.0"
+	},
+
+    "autoload-dev": {
+        "psr-4": {"JuniWalk\\Tests\\": "tests/"}
+    },
+
+	"require-dev": {
+		"contributte/translation": "^2.0",
+		"nette/tester": "^2.5",
+		"phpstan/extension-installer": "^1.0",
+		"phpstan/phpstan": "^2.0",
+		"phpstan/phpstan-nette": "^2.0",
+		"staabm/phpstan-todo-by": "^0.3",
+		"tracy/tracy": "^2.10"
+	},
+
+	"scripts": {
+		"lint": "phpstan analyze",
+		"test": "tester tests/ -C"
+	}
+}

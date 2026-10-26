@@ -1,0 +1,12 @@
+{
+	"roles": {
+		"guest": [],
+		"user": ["guest"]
+	},
+
+	"resources": {"Article": ["view"]},
+
+	"rules": [
+		{"role": "guest", "resource": "Article", "privilege": "view"}
+	]
+}

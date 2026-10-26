@@ -1,0 +1,15 @@
+parameters:
+	level: 9
+	phpVersion:
+		min: 80400
+		max: 80500
+
+	paths:
+		- src
+		- tests
+
+	todo_by:
+		referenceVersion: "nextMinor"
+
+	ignoreErrors:
+		- identifier: trait.unused

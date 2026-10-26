@@ -1,0 +1,46 @@
+roles:
+	guest:
+	client: guest			# single parent
+	user: client
+	manager:
+		parents: user
+		label: enum.role.manager
+		color: primary
+		power: 2			# hasPowerOver compares this, independent of parents
+	admin: [manager, auditor]	# multiple parents
+	auditor:
+
+# Nesting means inheritance, a rule on the parent covers its children
+resources:
+	Auth:
+	Error:
+	Menu:Web:
+		Web:Home:
+		Web:Product: [view, edit, edit.approval, delete]
+	Menu:Admin:
+		privileges: [view]	# reserved key, own privileges of a resource with children
+		Admin:User: [view, edit, delete]
+
+# Structured form: allow / deny > role > resource > privileges
+# Empty privileges mean all of them, deny is applied after allow so it always wins
+rules:
+	allow:
+		guest:
+			Auth:
+			Error:
+		user:
+			Menu:Web:
+		manager:
+			Admin:User: [view]
+		admin:
+			'*':
+	deny:
+		user:
+			Web:Product: [edit.approval]
+
+# Plain list form is accepted too, order matters and the last matching rule wins
+# rules:
+# 	- {role: guest, resource: Auth}
+# 	- {role: user, resource: Web:Product, privileges: [view, edit]}
+# 	- {role: user, resource: Web:Product, privilege: delete, allowed: false}
+# 	- {role: admin}		# everything

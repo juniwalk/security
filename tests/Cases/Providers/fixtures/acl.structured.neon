@@ -1,0 +1,25 @@
+roles:
+	guest:
+	user: guest
+	admin: user
+
+resources:
+	Menu:Content:
+		Article: [view.default, view.edit, edit.active]
+		Page: [view]
+	System:
+
+rules:
+	allow:
+		guest:
+			Article: view
+		user:
+			Article: [edit.active]
+			Page:
+		admin:
+			'*':
+	deny:
+		guest:
+			'*': [edit]
+		admin:
+			System:

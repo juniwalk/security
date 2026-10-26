@@ -1,0 +1,10 @@
+roles:
+	guest:
+	root: admin
+
+resources:
+	Article: [view.archive]
+
+rules:
+	- {role: root, resource: System}
+	- {role: guest, resource: Article, privilege: view.archive}
