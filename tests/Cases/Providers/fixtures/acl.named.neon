@@ -1,0 +1,5 @@
+enum: FileNamedRole
+
+roles:
+	visitor:
+	member: visitor

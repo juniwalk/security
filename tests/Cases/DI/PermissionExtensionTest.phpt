@@ -124,7 +124,8 @@ final class PermissionExtensionTest extends TestCase
 			'sources' => [
 				['source' => new Statement(FileProvider::class, [self::File]), 'enum' => 'AppRole'],
 				['source' => '@extra', 'enum' => 'Other\ExtraRole'],
-				['source' => new Statement(FileProvider::class, [self::Extra])],
+				new Statement(FileProvider::class, [self::Extra]),
+				new Statement(FileProvider::class, [__DIR__.'/../Providers/fixtures/acl.named.neon']),
 			],
 		], [
 			'extra' => new Statement(FileProvider::class, [self::Extra]),
@@ -140,7 +141,8 @@ final class PermissionExtensionTest extends TestCase
 		Assert::true(\JuniWalk\Tests\Generated\AppRole::User instanceof \JuniWalk\Utils\Enums\Interfaces\LabeledEnum);
 		Assert::true(is_file($dir.'/AppRole.php'));
 		Assert::true(enum_exists(\Other\ExtraRole::class));
-		Assert::true(enum_exists(\JuniWalk\Tests\Generated\AclExtra::class));
+		Assert::true(enum_exists(\JuniWalk\Tests\Generated\FileNamedRole::class));
+		Assert::false(enum_exists(\JuniWalk\Tests\Generated\AclExtra::class, false));
 	}
 
 

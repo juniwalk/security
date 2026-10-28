@@ -1,3 +1,5 @@
+enum: AclRole			# optional, name of the generated role enum (true = PascalCase of the file name)
+
 roles:
 	guest:
 	client: guest			# single parent

@@ -43,9 +43,10 @@ use function sys_get_temp_dir;
  *     - JuniWalk\Security\Providers\FileProvider(%appDir%/config/permission.neon)
  *     - @customProvider
  *     - source: JuniWalk\Security\Providers\FileProvider(%appDir%/config/admin.neon)
- *       enum: AdminRole              # generates App\Security\AdminRole with a case per role (true = Provider::getEnumName(), PascalCase of the file name for FileProvider)
+ *       enum: AdminRole              # overrides the name of generated App\Security\AdminRole
  *
- * Enums are generated only for sources using the mapping form, the provider is then built at compile time.
+ * A provider names its enum itself (Provider::getEnumName(), FileProvider reads the "enum" key of its file),
+ * the "enum" option of a source overrides the name, "false" disables it. Providers are built at compile time.
  */
 final class PermissionExtension extends CompilerExtension
 {
@@ -66,7 +67,7 @@ final class PermissionExtension extends CompilerExtension
 		return Expect::structure([
 			'sources' => Expect::arrayOf(Expect::anyOf($source, Expect::structure([
 				'source' => Expect::anyOf(Expect::string(), Expect::type(Statement::class))->required(),
-				'enum' => Expect::anyOf(Expect::string(), Expect::bool())->default(true),
+				'enum' => Expect::anyOf(Expect::string(), Expect::bool())->default(null),
 			])))->required(),
 			'strict' => Expect::bool(true),
 			'enumNamespace' => Expect::string('JuniWalk\\Security\\Roles'),
@@ -122,13 +123,30 @@ final class PermissionExtension extends CompilerExtension
 		$sources = $this->sources;
 		$generator = new RoleEnumGenerator;
 
-		foreach ($this->enums as $index => $enum) {
+		foreach ($sources as $index => $source) {
+			$enum = $this->enums[$index] ?? null;
+
 			if ($enum === false) {
 				continue;
 			}
 
-			[$provider, $source] = $this->resolveProvider($sources[$index]);
-			$name = is_string($enum) ? $enum : $provider->getEnumName() ?? throw new InvalidStateException("Option '{$this->name}.sources' needs an explicit enum name for provider '".$provider::class."'.");
+			$resolved = $this->resolveProvider($source, required: $enum !== null);
+
+			if (!$resolved) {
+				continue;
+			}
+
+			[$provider, $source] = $resolved;
+			$name = is_string($enum) ? $enum : $provider->getEnumName();
+
+			if ($name === null && $enum === true) {
+				throw new InvalidStateException("Provider '".$provider::class."' does not name its enum, set 'enum' of the source to a name.");
+			}
+
+			if ($name === null) {
+				continue;
+			}
+
 			$class = str_contains($name, '\\') ? ltrim($name, '\\') : $config->enumNamespace.'\\'.$name;
 
 			if (isset($this->enumProviders[$class])) {
@@ -156,9 +174,9 @@ final class PermissionExtension extends CompilerExtension
 	 * Provider is instantiated at compile time and again whenever the generated file is missing,
 	 * so it must be a class with constant arguments.
 	 *
-	 * @return array{Provider, Statement}
+	 * @return array{Provider, Statement}|null null when it cannot be built and is not required
 	 */
-	private function resolveProvider(Statement|Reference $source): array
+	private function resolveProvider(Statement|Reference $source, bool $required): ?array
 	{
 		$builder = $this->getContainerBuilder();
 
@@ -170,12 +188,12 @@ final class PermissionExtension extends CompilerExtension
 		$entity = $source?->getEntity();
 
 		if (!$source || !is_string($entity) || !class_exists($entity) || !is_a($entity, Provider::class, true)) {
-			throw new InvalidStateException("Option '{$this->name}.sources' needs a provider class with constant arguments to generate its enum.");
+			return $required ? throw new InvalidStateException("Option '{$this->name}.sources' needs a provider class with constant arguments to generate its enum.") : null;
 		}
 
 		foreach ($source->arguments as $argument) {
 			if ($argument instanceof Statement || $argument instanceof Reference) {
-				throw new InvalidStateException("Provider '$entity' has service arguments, its enum cannot be generated at compile time.");
+				return $required ? throw new InvalidStateException("Provider '$entity' has service arguments, its enum cannot be generated at compile time.") : null;
 			}
 		}
 

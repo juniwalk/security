@@ -14,14 +14,14 @@ permission:
 		- JuniWalk\Security\Providers\FileProvider(%appDir%/config/permission.neon)
 		- @customProvider
 		- source: JuniWalk\Security\Providers\FileProvider(%appDir%/config/admin.neon)
-		  enum: AdminRole   # generate role enum for this provider (true = Provider::getEnumName(), file name in PascalCase for FileProvider; FQCN allowed)
-	enumNamespace: App\Security      # default JuniWalk\Security\Generated
-	enumDir: %appDir%/Security       # default %tempDir%/security-enums
+		  enum: AdminRole   # optional, overrides the name given by the provider, false disables the enum
+	enumNamespace: App\Security      # default JuniWalk\Security\Roles
+	enumDir: %appDir%/Security       # default %tempDir%/cache/JuniWalk.Security.Roles
 ```
 
 Sources are merged in the listed order, rules keep that order too (later overrides earlier).
 
-Sources in the mapping form (`source` + `enum`) get a string-backed enum with a case per role generated at container build (`AdminRole::Admin`, `label()`, `power()`, `hasPowerOver()`, `getMap()`, implements `Nette\Security\Role`). The provider is instantiated at compile time, so it must be a class with constant arguments (or a service defined that way); the enum file is `require_once`d in `Container::initialize()`, point `enumDir` into your autoloaded sources to get IDE support.
+A provider that names its enum (`Provider::getEnumName()`, `null` means none) gets a string-backed enum with a case per role generated at container build (`AdminRole::Admin`, `label()`, `color()`, `power()`, `hasPowerOver()`, `getMap()`, implements `LabeledEnum` and `PoweredRole` from juniwalk/utils). `FileProvider` reads the name from the top level `enum` key of its file (`enum: AdminRole`, or `enum: true` for PascalCase of the file name). A name with a backslash is a full class name, otherwise it goes to `enumNamespace`. Providers are instantiated at compile time, so they must be classes with constant arguments (a source with service arguments is skipped unless `enum` is set, then it throws). Enum files are written to `enumDir` and recreated when missing, so clearing the cache is safe.
 
 ## Definitions
 

@@ -50,9 +50,18 @@ final class FileProvider implements Provider
 	}
 
 
-	public function getEnumName(): string
+	/**
+	 * Top level key "enum" names the generated role enum, "true" takes the name from the file name.
+	 */
+	public function getEnumName(): ?string
 	{
-		return RoleEnumGenerator::toPascalCase(pathinfo($this->file, PATHINFO_FILENAME));
+		$enum = $this->read()['enum'] ?? false;
+
+		return match (true) {
+			$enum === true => RoleEnumGenerator::toPascalCase(pathinfo($this->file, PATHINFO_FILENAME)),
+			is_string($enum) && $enum !== '' => $enum,
+			default => null,
+		};
 	}
 
 
@@ -63,6 +72,25 @@ final class FileProvider implements Provider
 
 
 	public function load(): Definitions
+	{
+		$data = $this->read();
+
+		if ($unknown = array_diff(array_keys($data), ['enum', 'roles', 'resources', 'rules'])) {
+			throw new InvalidArgumentException('ACL file contains unknown section "'.implode('", "', $unknown).'".');
+		}
+
+		return new Definitions(
+			$this->roles((array) ($data['roles'] ?? [])),
+			$this->resources((array) ($data['resources'] ?? [])),
+			$this->rules((array) ($data['rules'] ?? [])),
+		);
+	}
+
+
+	/**
+	 * @return array<mixed>
+	 */
+	private function read(): array
 	{
 		if (!is_file($this->file)) {
 			throw new InvalidArgumentException('ACL file "'.$this->file.'" does not exist.');
@@ -78,15 +106,7 @@ final class FileProvider implements Provider
 
 		// todo: add data validation before creating definitions using nette/schema
 
-		if ($unknown = array_diff(array_keys($data), ['roles', 'resources', 'rules'])) {
-			throw new InvalidArgumentException('ACL file contains unknown section "'.implode('", "', $unknown).'".');
-		}
-
-		return new Definitions(
-			$this->roles((array) ($data['roles'] ?? [])),
-			$this->resources((array) ($data['resources'] ?? [])),
-			$this->rules((array) ($data['rules'] ?? [])),
-		);
+		return $data;
 	}
 
 
