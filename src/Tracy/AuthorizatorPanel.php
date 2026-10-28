@@ -75,7 +75,7 @@ final class AuthorizatorPanel implements IBarPanel
 
 	private function renderPower(PowerCheck $check): string
 	{
-		$html = '<small>power over role <b>'.self::e($check->over).'</b> (power '.($check->overPower ?? 'unknown role').')</small><ol style="margin:4px 0">'
+		$html = '<details><summary>power over role <b>'.self::e($check->over).'</b> (power '.($check->overPower ?? 'unknown role').')</summary><ol style="margin:4px 0">'
 			.'<li>privilege granted to any role → '.($check->granted ? '<b style="color:#2a2">yes</b>' : '<b style="color:#c00">no</b>').'</li>';
 
 		foreach ($check->powers as $role => $power) {
@@ -84,15 +84,21 @@ final class AuthorizatorPanel implements IBarPanel
 				.($has ? '<b style="color:#2a2">has power</b>' : '<b style="color:#c00">no power</b>').'</li>';
 		}
 
-		return $html.'</ol>';
+		return $html.'</ol></details>';
 	}
 
 
 	private function renderPath(Check $check): string
 	{
+		$decisive = $check->getDecisive();
+		$summary = $decisive
+			? 'decided by role <b>'.self::e($decisive->role).'</b>, resource <b>'.self::e($decisive->resource ?: '*').'</b>, privilege <b>'.self::e($decisive->privilege ?: '*').'</b>'
+			: 'no rule matched';
+
 		$html = '<small>roles: '.self::chain($check->roleChain)
 			.'<br>resources: '.self::chain($check->resourceChain)
 			.'<br>privileges: '.self::chain($check->privilegeChain).'</small>'
+			.'<details><summary>'.$summary.' <small>('.count($check->steps).' lookups)</small></summary>'
 			.'<ol style="margin:4px 0">';
 
 		foreach ($check->steps as $step) {
@@ -108,7 +114,7 @@ final class AuthorizatorPanel implements IBarPanel
 			$html .= '<li><b style="color:#c00">no rule matched, denied by default</b></li>';
 		}
 
-		return $html.'</ol>';
+		return $html.'</ol></details>';
 	}
 
 
