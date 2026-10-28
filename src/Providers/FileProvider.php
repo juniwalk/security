@@ -8,6 +8,7 @@
 namespace JuniWalk\Security\Providers;
 
 use InvalidArgumentException;
+use JuniWalk\Security\DI\RoleEnumGenerator;
 use JuniWalk\Security\Definitions;
 use JuniWalk\Security\Provider;
 use JuniWalk\Security\Resource;
@@ -46,6 +47,18 @@ final class FileProvider implements Provider
 	public function __construct(
 		private readonly string $file,
 	) {
+	}
+
+
+	public function getEnumName(): string
+	{
+		return RoleEnumGenerator::toPascalCase(pathinfo($this->file, PATHINFO_FILENAME));
+	}
+
+
+	public function getFile(): string
+	{
+		return $this->file;
 	}
 
 

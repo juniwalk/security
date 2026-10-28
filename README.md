@@ -13,9 +13,15 @@ permission:
 	sources:                # services, class names or statements implementing JuniWalk\Security\Provider
 		- JuniWalk\Security\Providers\FileProvider(%appDir%/config/permission.neon)
 		- @customProvider
+		- source: JuniWalk\Security\Providers\FileProvider(%appDir%/config/admin.neon)
+		  enum: AdminRole   # generate role enum for this provider (true = Provider::getEnumName(), file name in PascalCase for FileProvider; FQCN allowed)
+	enumNamespace: App\Security      # default JuniWalk\Security\Generated
+	enumDir: %appDir%/Security       # default %tempDir%/security-enums
 ```
 
 Sources are merged in the listed order, rules keep that order too (later overrides earlier).
+
+Sources in the mapping form (`source` + `enum`) get a string-backed enum with a case per role generated at container build (`AdminRole::Admin`, `label()`, `power()`, `hasPowerOver()`, `getMap()`, implements `Nette\Security\Role`). The provider is instantiated at compile time, so it must be a class with constant arguments (or a service defined that way); the enum file is `require_once`d in `Container::initialize()`, point `enumDir` into your autoloaded sources to get IDE support.
 
 ## Definitions
 

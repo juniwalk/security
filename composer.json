@@ -26,6 +26,7 @@
 
 	"require": {
 		"php": ">=8.4",
+		"juniwalk/utils": "^4.12",
 		"nette/application": "^3.2",
 		"nette/caching": "^3.0",
 		"nette/di": "^3.0",

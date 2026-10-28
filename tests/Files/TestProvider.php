@@ -18,6 +18,12 @@ final class TestProvider implements Provider
 	}
 
 
+	public function getEnumName(): ?string
+	{
+		return null;
+	}
+
+
 	public function load(): Definitions
 	{
 		return $this->definitions;

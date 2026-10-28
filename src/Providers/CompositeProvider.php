@@ -34,6 +34,12 @@ final class CompositeProvider implements Provider
 	}
 
 
+	public function getEnumName(): ?string
+	{
+		return null;
+	}
+
+
 	public function load(): Definitions
 	{
 		$roles = $resources = $rules = [];

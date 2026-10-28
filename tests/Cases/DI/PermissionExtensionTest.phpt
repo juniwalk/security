@@ -114,6 +114,54 @@ final class PermissionExtensionTest extends TestCase
 	}
 
 
+	public function testRoleEnumIsGeneratedPerSource(): void
+	{
+		$dir = sys_get_temp_dir().'/security-enums-'.getmypid();
+		$container = $this->create([
+			'strict' => false,
+			'enumDir' => $dir,
+			'enumNamespace' => 'JuniWalk\Tests\Generated',
+			'sources' => [
+				['source' => new Statement(FileProvider::class, [self::File]), 'enum' => 'AppRole'],
+				['source' => '@extra', 'enum' => 'Other\ExtraRole'],
+				['source' => new Statement(FileProvider::class, [self::Extra])],
+			],
+		], [
+			'extra' => new Statement(FileProvider::class, [self::Extra]),
+		]);
+		$container->initialize();
+
+		$role = \JuniWalk\Tests\Generated\AppRole::Admin;
+		Assert::same('admin', $role->getRoleId());
+		Assert::same('enum.role.user', \JuniWalk\Tests\Generated\AppRole::User->label());
+		Assert::same(['guest'], \JuniWalk\Tests\Generated\AppRole::getMap()['user']);
+		Assert::same(\JuniWalk\Utils\Enums\Color::Success, \JuniWalk\Tests\Generated\AppRole::User->color());
+		Assert::same(\JuniWalk\Tests\Generated\AppRole::User, \JuniWalk\Tests\Generated\AppRole::make('user'));
+		Assert::true(\JuniWalk\Tests\Generated\AppRole::User instanceof \JuniWalk\Utils\Enums\Interfaces\LabeledEnum);
+		Assert::true(is_file($dir.'/AppRole.php'));
+		Assert::true(enum_exists(\Other\ExtraRole::class));
+		Assert::true(enum_exists(\JuniWalk\Tests\Generated\AclExtra::class));
+	}
+
+
+	public function testMissingEnumFileIsRecreated(): void
+	{
+		$dir = sys_get_temp_dir().'/security-enums-missing-'.getmypid();
+		\JuniWalk\Security\DI\RoleEnumGenerator::load('JuniWalk\Tests\Missing\GoneRole', $dir, new FileProvider(self::File));
+
+		Assert::true(is_file($dir.'/GoneRole.php'));
+		Assert::true(enum_exists(\JuniWalk\Tests\Missing\GoneRole::class, false));
+	}
+
+
+	public function testUnnameableValueFails(): void
+	{
+		Assert::same('MyRole', \JuniWalk\Security\DI\RoleEnumGenerator::toPascalCase('my_role'));
+		Assert::exception(fn() => \JuniWalk\Security\DI\RoleEnumGenerator::toPascalCase('3d'), InvalidArgumentException::class);
+		Assert::exception(fn() => \JuniWalk\Security\DI\RoleEnumGenerator::toPascalCase('!!'), InvalidArgumentException::class);
+	}
+
+
 	public function testSourcesAreRequired(): void
 	{
 		Assert::exception(fn() => $this->create([]), InvalidConfigurationException::class);

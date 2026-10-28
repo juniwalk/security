@@ -10,4 +10,9 @@ namespace JuniWalk\Security;
 interface Provider
 {
 	public function load(): Definitions;
+
+	/**
+	 * Name for the generated role enum, null when the provider cannot tell.
+	 */
+	public function getEnumName(): ?string;
 }
