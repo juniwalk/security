@@ -9,6 +9,7 @@ namespace JuniWalk\Security\Tracy;
 
 use JuniWalk\Security\Authorizator;
 use JuniWalk\Security\Check;
+use JuniWalk\Security\PowerCheck;
 use Tracy\IBarPanel;
 
 use function array_map;
@@ -21,13 +22,13 @@ use function implode;
  */
 final class AuthorizatorPanel implements IBarPanel
 {
-	/** @var Check[] */
+	/** @var array<Check|PowerCheck> */
 	private array $checks = [];
 
 
 	public function __construct(Authorizator $authorizator)
 	{
-		$authorizator->onCheck[] = function(Check $check): void {
+		$authorizator->onCheck[] = function(Check|PowerCheck $check): void {
 			$this->checks[] = $check;
 		};
 	}
@@ -62,13 +63,28 @@ final class AuthorizatorPanel implements IBarPanel
 		foreach ($this->checks as $index => $check) {
 			$html .= '<tr><td>'.($index + 1).'</td>'
 				.'<td style="font-weight:bold;color:'.($check->allowed ? '#2a2' : '#c00').'">'.($check->allowed ? 'ALLOW' : 'DENY').'</td>'
-				.'<td>'.self::e($check->role).'</td>'
+				.'<td>'.self::e($check instanceof PowerCheck ? implode(', ', $check->roles) : $check->role).'</td>'
 				.'<td>'.self::e($check->resource ?? '*').'</td>'
 				.'<td>'.self::e($check->privilege ?? '*').'</td>'
-				.'<td>'.$this->renderPath($check).'</td></tr>';
+				.'<td>'.($check instanceof PowerCheck ? $this->renderPower($check) : $this->renderPath($check)).'</td></tr>';
 		}
 
 		return $html.'</table></div></div>';
+	}
+
+
+	private function renderPower(PowerCheck $check): string
+	{
+		$html = '<small>power over role <b>'.self::e($check->over).'</b> (power '.($check->overPower ?? 'unknown role').')</small><ol style="margin:4px 0">'
+			.'<li>privilege granted to any role → '.($check->granted ? '<b style="color:#2a2">yes</b>' : '<b style="color:#c00">no</b>').'</li>';
+
+		foreach ($check->powers as $role => $power) {
+			$has = $power !== null && $check->overPower !== null && $power >= $check->overPower;
+			$html .= '<li>role <b>'.self::e((string) $role).'</b> power '.($power ?? 'unknown role').' → '
+				.($has ? '<b style="color:#2a2">has power</b>' : '<b style="color:#c00">no power</b>').'</li>';
+		}
+
+		return $html.'</ol>';
 	}
 
 

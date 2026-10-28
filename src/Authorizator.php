@@ -28,7 +28,7 @@ class Authorizator implements NetteAuthorizator
 {
 	private const NoScope = '';
 
-	/** @var array<callable(Check): void> called after each check, the trace is only built when listened to */
+	/** @var array<callable(Check|PowerCheck): void> called after each check, the trace is only built when listened to */
 	public array $onCheck = [];
 
 	/** @var array<string, Role> */
@@ -105,6 +105,45 @@ class Authorizator implements NetteAuthorizator
 		}
 
 		return $result;
+	}
+
+
+	/**
+	 * Allowed when any of the roles is granted the privilege and any of them has power over the given role.
+	 *
+	 * @param array<NetteRole|string> $roles
+	 */
+	public function isAllowedOver(array $roles, NetteResource|string|null $resource, ?string $privilege, NetteRole|string $over): bool
+	{
+		$over = $over instanceof NetteRole ? $over->getRoleId() : $over;
+		$ids = [];
+		$granted = false;
+
+		foreach ($roles as $role) {
+			$ids[] = $id = $role instanceof NetteRole ? $role->getRoleId() : $role;
+			$granted = $granted || $this->isAllowed($id, $resource, $privilege);
+		}
+
+		$powers = [];
+		$powerful = false;
+
+		foreach ($ids as $id) {
+			$powers[$id] = isset($this->roles[$id]) ? $this->roles[$id]->power : null;
+			$powerful = $powerful || $this->hasPowerOver($id, $over);
+		}
+
+		$allowed = $granted && $powerful;
+
+		if (!empty($this->onCheck)) {
+			$resource = $resource instanceof NetteResource ? $resource->getResourceId() : $resource;
+			$check = new PowerCheck($ids, $resource, $privilege, $over, isset($this->roles[$over]) ? $this->roles[$over]->power : null, $granted, $powers, $allowed);
+
+			foreach ($this->onCheck as $callback) {
+				$callback($check);
+			}
+		}
+
+		return $allowed;
 	}
 
 

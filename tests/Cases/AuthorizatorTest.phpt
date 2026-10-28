@@ -12,6 +12,7 @@ require __DIR__.'/../bootstrap.php';
 use InvalidArgumentException;
 use JuniWalk\Security\Authorizator;
 use JuniWalk\Security\Definitions;
+use JuniWalk\Security\PowerCheck;
 use JuniWalk\Security\Resource;
 use JuniWalk\Security\Role;
 use JuniWalk\Security\Rule;
@@ -157,6 +158,24 @@ final class AuthorizatorTest extends TestCase
 		Assert::true($acl->hasPowerOver('admin', 'admin'));
 		Assert::true($acl->hasPowerOver(new Role('user'), new Role('guest')));
 		Assert::false($acl->hasPowerOver('guest', 'admin'));
+	}
+
+
+	public function testIsAllowedOver(): void
+	{
+		$definitions = new Definitions(
+			[new Role('low', [], power: 1), new Role('boss', [], power: 5)],
+			[new Resource('Page', null, [])],
+			[new Rule('low', true, 'Page'), new Rule('boss', true, 'Page')],
+		);
+		$acl = new Authorizator(new TestProvider($definitions));
+		$traces = [];
+		$acl->onCheck[] = function($check) use (&$traces) { $traces[] = $check; };
+
+		Assert::true($acl->isAllowedOver(['boss'], 'Page', 'view', 'low'));
+		Assert::false($acl->isAllowedOver(['low'], 'Page', 'view', 'boss'));
+		Assert::false($acl->isAllowedOver(['low'], 'Other', 'view', 'low'));
+		Assert::type(PowerCheck::class, end($traces));
 	}
 
 

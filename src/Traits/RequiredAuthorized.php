@@ -53,6 +53,17 @@ trait RequiredAuthorized
 			return;
 		}
 
+		$authorizator = $user->getAuthorizatorIfExists();
+
+		// ? Include power checking if the role is specified and the authorizator supports it
+		if ($role && $authorizator instanceof Authorizator) {
+			if (!$authorizator->isAllowedOver($user->getRoles(), $resource, $task, $role)) {
+				throw PermissionDeniedException::prohibited($resource, $task);
+			}
+
+			return;
+		}
+
 		try {
 			if (!$user->isAllowed($resource, $task)) {
 				throw PermissionDeniedException::prohibited($resource, $task);
@@ -61,23 +72,5 @@ trait RequiredAuthorized
 		} catch (InvalidStateException) {
 			return;
 		}
-
-		$authorizator = $user->getAuthorizatorIfExists();
-
-		// ? Unable to check power over the role if no role is given or authorizator is not available
-		if (!$role || !$authorizator instanceof Authorizator) {
-			return;
-		}
-
-		foreach ($user->getRoles() as $me) {
-			if (!$authorizator->hasPowerOver($me, $role)) {
-				continue;
-			}
-
-			return;
-		}
-
-		// ? None of the roles of the user have power over the given role
-		throw PermissionDeniedException::prohibited($resource, $task);
 	}
 }
