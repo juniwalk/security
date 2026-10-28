@@ -28,6 +28,9 @@ class Authorizator implements NetteAuthorizator
 {
 	private const NoScope = '';
 
+	/** @var array<callable(Check): void> called after each check, the trace is only built when listened to */
+	public array $onCheck = [];
+
 	/** @var array<string, Role> */
 	private array $roles = [];
 
@@ -68,18 +71,40 @@ class Authorizator implements NetteAuthorizator
 		}
 
 		$roles = $this->getRoleChain($role);
+		$resources = $this->getResourceChain($resource);
+		$privileges = self::getPrivilegeChain($privilege);
+		$tracing = !empty($this->onCheck);
+		$steps = [];
+		$result = false;
 
-		foreach ($this->getResourceChain($resource) as $resourceId) {
-			foreach (self::getPrivilegeChain($privilege) as $privilegeId) {
+		foreach ($resources as $resourceId) {
+			foreach ($privileges as $privilegeId) {
 				foreach ($roles as $roleId) {
-					if (isset($this->rules[$roleId][$resourceId][$privilegeId])) {
-						return $this->rules[$roleId][$resourceId][$privilegeId];
+					$rule = $this->rules[$roleId][$resourceId][$privilegeId] ?? null;
+
+					if ($tracing) {
+						$steps[] = new Step($roleId, $resourceId, $privilegeId, $rule);
 					}
+
+					if ($rule === null) {
+						continue;
+					}
+
+					$result = $rule;
+					break 3;
 				}
 			}
 		}
 
-		return false;
+		if ($tracing) {
+			$check = new Check($role, $resource, $privilege, $result, $roles, $resources, $privileges, $steps);
+
+			foreach ($this->onCheck as $callback) {
+				$callback($check);
+			}
+		}
+
+		return $result;
 	}
 
 

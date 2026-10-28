@@ -11,6 +11,7 @@ use JuniWalk\Security\Authorizator;
 use JuniWalk\Security\Provider;
 use JuniWalk\Security\Providers\CompositeProvider;
 use JuniWalk\Security\Providers\FileProvider;
+use JuniWalk\Security\Tracy\AuthorizatorPanel;
 use Nette\DI\CompilerExtension;
 use Nette\DI\Definitions\Reference;
 use Nette\DI\Definitions\ServiceDefinition;
@@ -19,6 +20,7 @@ use Nette\InvalidStateException;
 use Nette\PhpGenerator\ClassType;
 use Nette\Schema\Expect;
 use Nette\Schema\Schema;
+use Tracy\Bar;
 use stdClass;
 
 use function array_values;
@@ -50,6 +52,8 @@ use function sys_get_temp_dir;
  */
 final class PermissionExtension extends CompilerExtension
 {
+	private ?string $panel = null;
+
 	/** @var array<int, string|bool> enum setting by source index */
 	private array $enums = [];
 
@@ -72,6 +76,7 @@ final class PermissionExtension extends CompilerExtension
 			'strict' => Expect::bool(true),
 			'enumNamespace' => Expect::string('JuniWalk\\Security\\Roles'),
 			'enumDir' => Expect::string(),
+			'debugger' => Expect::bool()->default(null),
 		]);
 	}
 
@@ -109,6 +114,17 @@ final class PermissionExtension extends CompilerExtension
 
 		$builder->addDefinition($this->prefix('authorizator'))
 			->setFactory(Authorizator::class, [$provider]);
+
+		// ? Panel is enabled by default in debug mode, explicit "debugger" option overrides it
+		$debugger = $config->debugger ?? ($builder->parameters['debugMode'] ?? false);
+
+		if ($debugger && class_exists(Bar::class)) {
+			$panel = $builder->addDefinition($this->prefix('panel'))
+				->setFactory(AuthorizatorPanel::class)
+				->setAutowired(false);
+
+			$this->panel = $panel->getName();
+		}
 	}
 
 
@@ -162,6 +178,10 @@ final class PermissionExtension extends CompilerExtension
 	public function afterCompile(ClassType $class): void
 	{
 		$initialize = $class->getMethod('initialize');
+
+		if ($this->panel !== null) {
+			$initialize->addBody('$this->getService(?)->addPanel($this->getService(?), ?);', ['tracy.bar', $this->prefix('panel'), 'juniwalk.security']);
+		}
 
 		foreach ($this->enumProviders as $enum => [$source, $directory]) {
 			assert(is_string($source->getEntity()));
