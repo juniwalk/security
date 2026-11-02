@@ -46,7 +46,7 @@ final class FileProvider implements Provider
 
 	public function __construct(
 		private readonly string $file,
-		private readonly bool $silent = false,
+		private readonly bool $strict = true,
 	) {
 	}
 
@@ -94,7 +94,7 @@ final class FileProvider implements Provider
 	private function read(): array
 	{
 		if (!is_file($this->file)) {
-			if ($this->silent) {
+			if (!$this->strict) {
 				return [];
 			}
 
