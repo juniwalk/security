@@ -46,6 +46,7 @@ final class FileProvider implements Provider
 
 	public function __construct(
 		private readonly string $file,
+		private readonly bool $silent = false,
 	) {
 	}
 
@@ -93,6 +94,10 @@ final class FileProvider implements Provider
 	private function read(): array
 	{
 		if (!is_file($this->file)) {
+			if ($this->silent) {
+				return [];
+			}
+
 			throw new InvalidArgumentException('ACL file "'.$this->file.'" does not exist.');
 		}
 

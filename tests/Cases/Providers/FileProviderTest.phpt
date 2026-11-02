@@ -153,6 +153,19 @@ final class FileProviderTest extends TestCase
 		Assert::exception(fn() => (new FileProvider(__DIR__.'/missing.neon'))->load(), InvalidArgumentException::class, '%a?%does not exist%a?%');
 		Assert::exception(fn() => (new FileProvider(__DIR__.'/fixtures/acl.txt'))->load(), InvalidArgumentException::class, '%a?%Unsupported%a?%');
 	}
+
+
+	public function testMissingFileSilent(): void
+	{
+		$provider = new FileProvider(__DIR__.'/missing.neon', true);
+		$definitions = $provider->load();
+
+		Assert::null($provider->getEnumName());
+		Assert::count(0, $definitions->roles);
+		Assert::count(0, $definitions->resources);
+		Assert::count(0, $definitions->rules);
+		Assert::exception(fn() => (new FileProvider(__DIR__.'/fixtures/acl.txt', true))->load(), InvalidArgumentException::class, '%a?%Unsupported%a?%');
+	}
 }
 
 (new FileProviderTest)->run();
