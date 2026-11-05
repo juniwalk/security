@@ -191,12 +191,12 @@ final class PermissionExtension extends CompilerExtension
 	{
 		$initialize = $class->getMethod('initialize');
 
-		if ($this->panel !== null) {
-			$initialize->addBody('$this->getService(?)->addPanel($this->getService(?), ?);', ['tracy.bar', $this->prefix('panel'), 'juniwalk.security']);
-		}
-
 		if ($this->aclPanel !== null) {
 			$initialize->addBody('$this->getService(?)->addPanel($this->getService(?), ?);', ['tracy.bar', $this->prefix('aclPanel'), 'juniwalk.security.acl']);
+		}
+
+		if ($this->panel !== null) {
+			$initialize->addBody('$this->getService(?)->addPanel($this->getService(?), ?);', ['tracy.bar', $this->prefix('panel'), 'juniwalk.security']);
 		}
 
 		foreach ($this->enumProviders as $enum => [$source, $directory]) {
