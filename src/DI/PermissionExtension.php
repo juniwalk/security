@@ -11,6 +11,7 @@ use JuniWalk\Security\Authorizator;
 use JuniWalk\Security\Provider;
 use JuniWalk\Security\Providers\CompositeProvider;
 use JuniWalk\Security\Providers\FileProvider;
+use JuniWalk\Security\Tracy\AclPanel;
 use JuniWalk\Security\Tracy\AuthorizatorPanel;
 use Nette\DI\CompilerExtension;
 use Nette\DI\Definitions\Reference;
@@ -39,6 +40,7 @@ use function sys_get_temp_dir;
  *
  * permission:
  *   strict: true
+ *   aclPanel: true                   # Tracy panel listing roles and their rules, default false
  *   enumNamespace: App\Security      # default JuniWalk\Security\Roles
  *   enumDir: %appDir%/Security       # default %tempDir%/cache/JuniWalk.Security.Roles
  *   sources:
@@ -53,6 +55,7 @@ use function sys_get_temp_dir;
 final class PermissionExtension extends CompilerExtension
 {
 	private ?string $panel = null;
+	private ?string $aclPanel = null;
 
 	/** @var array<int, string|bool> enum setting by source index */
 	private array $enums = [];
@@ -77,6 +80,7 @@ final class PermissionExtension extends CompilerExtension
 			'enumNamespace' => Expect::string('JuniWalk\\Security\\Roles'),
 			'enumDir' => Expect::string(),
 			'debugger' => Expect::bool()->default(null),
+			'aclPanel' => Expect::bool(false),
 		]);
 	}
 
@@ -124,6 +128,14 @@ final class PermissionExtension extends CompilerExtension
 				->setAutowired(false);
 
 			$this->panel = $panel->getName();
+		}
+
+		if ($config->aclPanel && class_exists(Bar::class)) {
+			$panel = $builder->addDefinition($this->prefix('aclPanel'))
+				->setFactory(AclPanel::class)
+				->setAutowired(false);
+
+			$this->aclPanel = $panel->getName();
 		}
 	}
 
@@ -181,6 +193,10 @@ final class PermissionExtension extends CompilerExtension
 
 		if ($this->panel !== null) {
 			$initialize->addBody('$this->getService(?)->addPanel($this->getService(?), ?);', ['tracy.bar', $this->prefix('panel'), 'juniwalk.security']);
+		}
+
+		if ($this->aclPanel !== null) {
+			$initialize->addBody('$this->getService(?)->addPanel($this->getService(?), ?);', ['tracy.bar', $this->prefix('aclPanel'), 'juniwalk.security.acl']);
 		}
 
 		foreach ($this->enumProviders as $enum => [$source, $directory]) {

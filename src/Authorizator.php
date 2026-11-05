@@ -174,6 +174,15 @@ class Authorizator implements NetteAuthorizator
 
 
 	/**
+	 * @return array<string, array<string, array<string, bool>>> effective rules as role => resource => privilege => allowed, empty string means all
+	 */
+	public function getRules(): array
+	{
+		return $this->rules;
+	}
+
+
+	/**
 	 * Role has power over another when its power level is equal or higher, parents are not considered.
 	 */
 	public function hasPowerOver(NetteRole|string $role, NetteRole|string $over): bool

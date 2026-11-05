@@ -21,6 +21,7 @@ use JuniWalk\Security\Providers\FileProvider;
 use Nette\DI\Definitions\Statement;
 use Nette\DI\InvalidConfigurationException;
 use Nette\InvalidStateException;
+use JuniWalk\Security\Tracy\AclPanel;
 use JuniWalk\Security\Tracy\AuthorizatorPanel;
 use Tracy\Bar;
 use Tester\Assert;
@@ -64,6 +65,24 @@ final class PermissionExtensionTest extends TestCase
 
 		$container = $this->create(['sources' => $sources], $bar);
 		Assert::false($container->hasService('permission.panel'));
+	}
+
+
+	public function testAclPanel(): void
+	{
+		$sources = [new Statement(FileProvider::class, [self::File])];
+		$bar = ['tracy.bar' => Bar::class];
+
+		$container = $this->create(['sources' => $sources, 'debugger' => true, 'aclPanel' => true], $bar);
+		$container->initialize();
+		$panel = $container->getService('permission.aclPanel');
+
+		Assert::type(AclPanel::class, $panel);
+		Assert::contains('guest', $panel->getPanel());
+		Assert::contains('ALLOW', $panel->getPanel());
+
+		$container = $this->create(['sources' => $sources, 'debugger' => true], $bar);
+		Assert::false($container->hasService('permission.aclPanel'));
 	}
 
 
